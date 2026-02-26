@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RetroVault — Collector AI</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Segoe UI', sans-serif;
+    background: #0d0d0d;
+    color: #e0e0e0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  header {
+    width: 100%;
+    background: #1a1a2e;
+    border-bottom: 2px solid #e94560;
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  header h1 {
+    font-size: 1.6rem;
+    color: #e94560;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  header span {
+    font-size: 0.85rem;
+    color: #888;
+    margin-top: 2px;
+  }
+
+  .badge {
+    background: #e94560;
+    color: white;
+    font-size: 0.7rem;
+    padding: 3px 8px;
+    border-radius: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-left: auto;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 820px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 24px 16px;
+    gap: 16px;
+  }
+
+  .api-bar {
+    background: #1a1a2e;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .api-bar label {
+    font-size: 0.8rem;
+    color: #888;
+    white-space: nowrap;
+  }
+
+  .api-bar input {
+    flex: 1;
+    background: #0d0d0d;
+    border: 1px solid #444;
+    border-radius: 6px;
+    padding: 8px 12px;
+    color: #e0e0e0;
+    font-size: 0.85rem;
+    font-family: monospace;
+  }
+
+  .api-bar input:focus { outline: none; border-color: #e94560; }
+
+  .suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .suggestion-btn {
+    background: #1a1a2e;
+    border: 1px solid #333;
+    color: #aaa;
+    font-size: 0.78rem;
+    padding: 6px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .suggestion-btn:hover {
+    border-color: #e94560;
+    color: #e94560;
+  }
+
+  .chat-window {
+    flex: 1;
+    background: #111;
+    border: 1px solid #222;
+    border-radius: 12px;
+    padding: 20px;
+    min-height: 420px;
+    max-height: 500px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .msg {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    animation: fadeIn 0.3s ease;
+  }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  .msg.user { flex-direction: row-reverse; }
+
+  .avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+
+  .avatar.ai { background: #e94560; }
+  .avatar.user-av { background: #1a1a2e; border: 1px solid #444; }
+
+  .bubble {
+    max-width: 75%;
+    padding: 12px 16px;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    line-height: 1.6;
+  }
+
+  .bubble.ai {
+    background: #1a1a2e;
+    border: 1px solid #2a2a4e;
+    color: #ddd;
+    border-top-left-radius: 2px;
+  }
+
+  .bubble.user-b {
+    background: #e94560;
+    color: white;
+    border-top-right-radius: 2px;
+    text-align: right;
+  }
+
+  .disclaimer {
+    font-size: 0.72rem;
+    color: #555;
+    margin-top: 8px;
+    font-style: italic;
+  }
+
+  .input-row {
+    display: flex;
+    gap: 10px;
+  }
+
+  #userInput {
+    flex: 1;
+    background: #1a1a2e;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 12px 16px;
+    color: #e0e0e0;
+    font-size: 0.9rem;
+    resize: none;
+    height: 50px;
+    transition: border-color 0.2s;
+  }
+
+  #userInput:focus { outline: none; border-color: #e94560; }
+
+  #sendBtn {
+    background: #e94560;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0 24px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  #sendBtn:hover { background: #c73652; }
+  #sendBtn:disabled { background: #555; cursor: not-allowed; }
+
+  .typing {
+    display: flex;
+    gap: 4px;
+    padding: 4px 0;
+  }
+
+  .typing span {
+    width: 8px; height: 8px;
+    background: #e94560;
+    border-radius: 50%;
+    animation: bounce 1.2s infinite;
+  }
+
+  .typing span:nth-child(2) { animation-delay: 0.2s; }
+  .typing span:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes bounce {
+    0%, 60%, 100% { transform: translateY(0); }
+    30% { transform: translateY(-8px); }
+  }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: #111; }
+  ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>⚙ RetroVault</h1>
+    <span>AI Collector Assistant</span>
+  </div>
+  <div class="badge">🤖 AI Powered</div>
+</header>
+
+<div class="container">
+
+  <div class="api-bar">
+    <label>Gemini API Key:</label>
+    <input type="password" id="apiKey" placeholder="Paste your Gemini API key here..." />
+  </div>
+
+  <div class="suggestions">
+    <button class="suggestion-btn" onclick="quickAsk(this)">Is G1 Optimus Prime Takara or Hasbro?</button>
+    <button class="suggestion-btn" onclick="quickAsk(this)">What makes a G1 Starscream rare?</button>
+    <button class="suggestion-btn" onclick="quickAsk(this)">How do I grade a loose GI Joe figure?</button>
+    <button class="suggestion-btn" onclick="quickAsk(this)">Difference between Bandai RG and MG Gundam?</button>
+    <button class="suggestion-btn" onclick="quickAsk(this)">What retro consoles are most valuable now?</button>
+  </div>
+
+  <div class="chat-window" id="chatWindow">
+    <div class="msg">
+      <div class="avatar ai">⚙</div>
+      <div>
+        <div class="bubble ai">
+          Welcome to RetroVault's Collector AI. I'm your expert guide on Transformers G1, Bandai Gundam, GI Joe, Hasbro, Takara Tomy, vintage toys, retro video games, and classic consoles.<br><br>
+          Ask me anything — history, rarity, variants, authenticity tips, or grading advice. What are you hunting for today?
+        </div>
+        <div class="disclaimer">⚠ AI-generated responses are for reference only. Always verify before high-value purchases.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="input-row">
+    <textarea id="userInput" placeholder="Ask about any retro toy, variant, rarity, or collectible..." onkeydown="handleKey(event)"></textarea>
+    <button id="sendBtn" onclick="sendMessage()">Send</button>
+  </div>
+
+</div>
+
+<script>
+const SYSTEM_PROMPT = `You are the RetroVault Collector AI — a world-class expert on vintage and retro collectibles. Your areas of expertise include:
+
+- Transformers G1 (Hasbro and Takara releases, Diaclone origins, variant identification, character history)
+- Bandai Gundam model kits (all grades: HG, MG, RG, PG, MG, RE/100, history of releases, rare kits)
+- GI Joe (vintage 1982–1994 figures, variants, accessories, condition grading)
+- Hasbro and Takara Tomy toys (history, differences between regional releases, reissues vs originals)
+- Retro video games (rare titles, regional variants, reproduction identification, NTSC vs PAL differences)
+- Retro video game consoles (hardware revisions, rarity, modding, value assessment)
+- Vintage toy condition grading (Mint, C10, C9, C8, MIB, MISB, loose with accessories)
+- Bootleg and reproduction identification
+- Collector market pricing guidance
+
+Your tone is knowledgeable, enthusiastic, and collector-friendly. You speak like a passionate expert who genuinely loves these toys. Keep answers informative but conversational. If asked about something outside this domain, politely redirect to your area of expertise.`;
+
+const history = [];
+
+async function sendMessage() {
+  const keyInput = document.getElementById('apiKey').value.trim();
+  const userInput = document.getElementById('userInput').value.trim();
+
+  if (!keyInput) { alert('Please enter your Gemini API key.'); return; }
+  if (!userInput) return;
+
+  addBubble(userInput, 'user');
+  document.getElementById('userInput').value = '';
+  document.getElementById('sendBtn').disabled = true;
+
+  history.push({ role: 'user', parts: [{ text: userInput }] });
+
+  const typingId = addTyping();
+
+  try {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${keyInput}`;
+
+    const body = {
+      system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+      contents: history
+    };
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    const data = await res.json();
+
+    removeTyping(typingId);
+
+    if (data.error) {
+      addBubble(`API Error: ${data.error.message}`, 'ai', true);
+      history.pop();
+    } else {
+      const reply = data.candidates[0].content.parts[0].text;
+      history.push({ role: 'model', parts: [{ text: reply }] });
+      addBubble(reply, 'ai', true);
+    }
+  } catch (err) {
+    removeTyping(typingId);
+    addBubble(`Connection error: ${err.message}`, 'ai', true);
+    history.pop();
+  }
+
+  document.getElementById('sendBtn').disabled = false;
+}
+
+function addBubble(text, sender, showDisclaimer = false) {
+  const chatWindow = document.getElementById('chatWindow');
+  const msg = document.createElement('div');
+  msg.className = `msg ${sender === 'user' ? 'user' : ''}`;
+
+  const isAI = sender === 'ai';
+  msg.innerHTML = `
+    <div class="avatar ${isAI ? 'ai' : 'user-av'}">${isAI ? '⚙' : '👤'}</div>
+    <div>
+      <div class="bubble ${isAI ? 'ai' : 'user-b'}">${text.replace(/\n/g, '<br>')}</div>
+      ${isAI && showDisclaimer ? '<div class="disclaimer">⚠ AI-generated. Verify before high-value purchases.</div>' : ''}
+    </div>`;
+
+  chatWindow.appendChild(msg);
+  chatWindow.scrollTop = chatWindow.scrollHeight;
+}
+
+function addTyping() {
+  const chatWindow = document.getElementById('chatWindow');
+  const id = 'typing_' + Date.now();
+  const div = document.createElement('div');
+  div.className = 'msg';
+  div.id = id;
+  div.innerHTML = `<div class="avatar ai">⚙</div><div class="bubble ai"><div class="typing"><span></span><span></span><span></span></div></div>`;
+  chatWindow.appendChild(div);
+  chatWindow.scrollTop = chatWindow.scrollHeight;
+  return id;
+}
+
+function removeTyping(id) {
+  const el = document.getElementById(id);
+  if (el) el.remove();
+}
+
+function quickAsk(btn) {
+  document.getElementById('userInput').value = btn.textContent;
+  sendMessage();
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+</script>
+</body>
+</html>
